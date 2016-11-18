@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="/bootstrap.css">
+    <style>
+        li{
+            margin-top: 10px;
+        }
+        .username{
+            color: #00b3ee;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="panel panel-default">
+        <div class="panel-heading text-center"><h3>聊~~~~~~~聊</h3></div>
+        <div class="panel-body">
+            <ul class="list-group" id="messages">
+            </ul>
+        </div>
+        <div class="panel-footer">
+            <input type="text" class="form-control" id="message">
+            <button class="btn btn-primary" id="myBtn">发言</button>
+        </div>
+    </div>
+</div>
+<script src="/jquery.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    //io.connect('/')
+    var socket = io.connect(`ws://${location.hostname}:${location.port}`);
+//    socket.on('disconnect',function (socket) {
+//        console.log('断开连接');
+//    });
+    socket.on('connect',function(){
+        var room = location.hash;
+        if(room.startsWith('#')){
+            socket.emit('join',room.slice(1));
+        }else{
+            socket.emit('join','');
+        }
+    });
+
+    socket.on('messages',function (messages) {
+        myMessages.innerHTML = messages.map(function (message) {
+            return `<li class="list-group-item"><span class="username">${message.username}</span>：${message.content}<span class="pull-right">${message.createAt}</span></li>`
+        }).join('')
+    });
+    socket.on('message',function (msgObj) {
+        var Li = document.createElement('li');
+        Li.innerHTML = `<span class="username">${msgObj.username}</span>：${msgObj.content}<span class="pull-right">${msgObj.createAt}</span>`;
+        Li.className = 'list-group-item';
+        messages.appendChild(Li)
+    });
+    /*
+    * 1.给按钮绑定事件,放事件发生后先取到文本框内容，发送给服务器
+    * 2.服务器收到消息
+    * */
+    var myBtn = document.getElementById('myBtn');
+    var myMessages = document.getElementById('messages');
+    var message = document.getElementById('message');
+    var msg= null;
+    myBtn.onclick = function () {
+        var message = document.getElementById('message');
+        socket.send(message.value);
+        message.value = '';
+    };
+    $('.list-group').delegate('.username','click',function () {
+        message.value = `@${$(this).html()} `
+    })
+</script>
+</body>
+</html>
